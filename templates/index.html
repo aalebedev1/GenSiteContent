@@ -14,7 +14,7 @@
     <header class="header">
         <div class="container">
             <h1 class="header__title">📝 Генератор постов</h1>
-            <p class="header__subtitle">Создайте готовый пост для вашего товара за один клик</p>
+            <p class="header__subtitle">Создайте пост для товара, сохраните в избранное или опубликуйте ВКонтакте</p>
         </div>
     </header>
 
@@ -71,7 +71,7 @@
         </section>
 
         <!-- ----- ПРАВАЯ КОЛОНКА: РЕЗУЛЬТАТ ----- -->
-        <section class="card result-card">
+        <section class="card result-card" id="result-card">
             <h2 class="card__title">Готовый пост</h2>
 
             <!-- Блок для готового текста -->
@@ -81,25 +81,77 @@
                 </p>
             </div>
 
-            <!-- Кнопка копирования (скрыта, пока нет текста) -->
-            <button id="copy-btn" class="btn btn--secondary" style="display: none;">
-                📋 Скопировать пост
-            </button>
+            <!-- ---- ДЕЙСТВИЯ С ПОСТОМ (скрыты, пока нет текста) ---- -->
+            <div id="post-actions" class="post-actions" style="display: none;">
 
-            <!-- Сообщение об успешном копировании -->
-            <span id="copy-message" class="copy-message" style="display: none;">
-                ✓ Пост скопирован
-            </span>
+                <!-- Ряд 1: копирование + избранное -->
+                <div class="post-actions__row">
+                    <button id="copy-btn" class="btn btn--small btn--outline">📋 Скопировать</button>
+                    <button id="fav-btn" class="btn btn--small btn--outline">★ В избранное</button>
+                    <span id="copy-message" class="copy-message">✓ Пост скопирован</span>
+                    <span id="fav-message" class="copy-message copy-message--fav">✓ В избранном</span>
+                </div>
+
+                <!-- ---- ПУБЛИКАЦИЯ ВКОНТАКТЕ ---- -->
+                <div class="post-actions__publish" id="vk-block">
+                    <!-- Чекбокс отложенной публикации -->
+                    <label class="form__checkbox-label">
+                        <input type="checkbox" id="schedule-check"> 🕒 Отложенная публикация
+                    </label>
+                    <div id="schedule-time-block" class="form__group" style="display: none;">
+                        <label class="form__label" for="schedule-time">Дата и время публикации</label>
+                        <input class="form__input" type="datetime-local" id="schedule-time">
+                    </div>
+                    <button id="publish-btn" class="btn btn--vk">📢 Опубликовать ВКонтакте</button>
+                    <span id="publish-message" class="copy-message copy-message--publish"></span>
+                </div>
+
+                <!-- Сообщение, если VK не настроен -->
+                {% if not vk_configured %}
+                <p class="vk-notice">
+                    ⚙️ VK не настроен. Создайте <code>config.json</code> по образцу
+                    <a href="/config.example.json" target="_blank">config.example.json</a>
+                </p>
+                {% endif %}
+            </div>
         </section>
 
     </main>
+
+    <!-- ============================================================
+         СЕКЦИЯ ИЗБРАННОГО
+    ============================================================ -->
+    <section class="container favorites-section" id="favorites-section">
+        <h2 class="favorites__title">★ Избранные посты</h2>
+        <div id="favorites-list" class="favorites-list">
+            {% if favorites %}
+                {% for fav in favorites %}
+                <div class="favorite-item" data-id="{{ fav.id }}">
+                    <div class="favorite-item__header">
+                        <span class="favorite-item__meta">
+                            {{ fav.created_at }}
+                            {% if fav.product_name %} · {{ fav.product_name }}{% endif %}
+                            {% if fav.mood %} · {{ moods.get(fav.mood, fav.mood) }}{% endif %}
+                        </span>
+                        <button class="favorite-item__remove" data-id="{{ fav.id }}">✕</button>
+                    </div>
+                    <pre class="favorite-item__text">{{ fav.text }}</pre>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="favorites__empty">Пока нет избранных постов. Сгенерируйте пост и нажмите «★ В избранное».</p>
+            {% endif %}
+        </div>
+    </section>
 
     <!-- ============================================================
          ПОДВАЛ
     ============================================================ -->
     <footer class="footer">
         <div class="container">
-            <p>⚙️ Настройки формирования — <a href="/voice.md" target="_blank">voice.md</a></p>
+            <p>⚙️ Настройки формирования — <a href="/voice.md" target="_blank">voice.md</a>
+             · VK настройки — <code>config.json</code>
+             · Избранное — <code>favorites.json</code></p>
         </div>
     </footer>
 
@@ -108,23 +160,43 @@
     ============================================================ -->
     <script>
         (function() {
-            // ---- ЭЛЕМЕНТЫ ----
+            // ---- ЭЛЕМЕНТЫ ФОРМЫ ----
             const form = document.getElementById('post-form');
             const resultBlock = document.getElementById('post-result');
+            const descriptionField = document.getElementById('description');
+
+            // ---- ЭЛЕМЕНТЫ ДЕЙСТВИЙ ----
+            const postActions = document.getElementById('post-actions');
             const copyBtn = document.getElementById('copy-btn');
             const copyMessage = document.getElementById('copy-message');
-            const descriptionField = document.getElementById('description');
-            const errorMessage = document.getElementById('error-message');
+            const favBtn = document.getElementById('fav-btn');
+            const favMessage = document.getElementById('fav-message');
+            const publishBtn = document.getElementById('publish-btn');
+            const publishMessage = document.getElementById('publish-message');
+            const scheduleCheck = document.getElementById('schedule-check');
+            const scheduleTime = document.getElementById('schedule-time');
+            const scheduleBlock = document.getElementById('schedule-time-block');
 
-            // ---- ОТПРАВКА ФОРМЫ ----
+            // ---- СОСТОЯНИЕ ТЕКУЩЕГО ПОСТА ----
+            let currentText = '';
+            let currentMood = '';
+            let currentProduct = '';
+            let currentFavId = null;  // null — не в избранном
+
+            // ---- ОТЛОЖЕННАЯ ПУБЛИКАЦИЯ: показать/скрыть поле времени ----
+            if (scheduleCheck) {
+                scheduleCheck.addEventListener('change', function() {
+                    scheduleBlock.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+
+            // ---- ОТПРАВКА ФОРМЫ (генерация поста) ----
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
-                // Сброс предыдущего сообщения об ошибке
                 const oldError = document.querySelector('.form__error');
                 if (oldError) oldError.remove();
 
-                // Проверка обязательного поля на клиенте
                 if (!descriptionField.value.trim()) {
                     const err = document.createElement('p');
                     err.className = 'form__error';
@@ -134,7 +206,6 @@
                     return;
                 }
 
-                // Собираем данные формы
                 const formData = new FormData(form);
 
                 try {
@@ -146,7 +217,6 @@
                     const data = await response.json();
 
                     if (!response.ok) {
-                        // Показываем ошибку от сервера
                         const err = document.createElement('p');
                         err.className = 'form__error';
                         err.textContent = data.error;
@@ -155,44 +225,226 @@
                     }
 
                     // Показываем готовый пост
-                    resultBlock.innerHTML = '<pre class="result__text">' + data.post + '</pre>';
-                    copyBtn.style.display = 'inline-block';
+                    currentText = data.post;
+                    currentMood = data.mood || '';
+                    currentProduct = data.product_name || '';
+                    currentFavId = null;
+
+                    resultBlock.innerHTML = '<pre class="result__text">' + escapeHtml(currentText) + '</pre>';
+                    postActions.style.display = 'block';
                     copyMessage.style.display = 'none';
+                    favMessage.style.display = 'none';
+                    publishMessage.style.display = 'none';
+                    favBtn.textContent = '★ В избранное';
 
                 } catch (err) {
                     resultBlock.innerHTML = '<p class="form__error">Ошибка соединения. Попробуйте снова.</p>';
+                    postActions.style.display = 'none';
                 }
             });
 
-            // ---- КОПИРОВАНИЕ ТЕКСТА ----
+            // ---- КОПИРОВАНИЕ ----
             copyBtn.addEventListener('click', async function() {
-                const postText = resultBlock.querySelector('.result__text');
-                if (!postText) return;
+                if (!currentText) return;
 
                 try {
-                    await navigator.clipboard.writeText(postText.textContent);
+                    await navigator.clipboard.writeText(currentText);
                 } catch (err) {
-                    // Запасной вариант для старых браузеров
-                    const range = document.createRange();
-                    range.selectNode(postText);
-                    window.getSelection().removeAllRanges();
-                    window.getSelection().addRange(range);
+                    const textarea = document.createElement('textarea');
+                    textarea.value = currentText;
+                    document.body.appendChild(textarea);
+                    textarea.select();
                     document.execCommand('copy');
-                    window.getSelection().removeAllRanges();
+                    document.body.removeChild(textarea);
                 }
 
-                // Показываем сообщение
-                copyMessage.style.display = 'inline';
-                copyMessage.style.opacity = '1';
+                showTempMessage(copyMessage);
+            });
 
-                // Прячем через 2.5 секунды
-                setTimeout(function() {
-                    copyMessage.style.opacity = '0';
+            // ---- ДОБАВЛЕНИЕ / УДАЛЕНИЕ ИЗ ИЗБРАННОГО ----
+            favBtn.addEventListener('click', async function() {
+                if (!currentText) return;
+
+                if (currentFavId) {
+                    // Удаляем из избранного
+                    const fd = new FormData();
+                    fd.append('id', currentFavId);
+
+                    try {
+                        const resp = await fetch('/favorite/remove', { method: 'POST', body: fd });
+                        const data = await resp.json();
+                        if (data.success) {
+                            currentFavId = null;
+                            favBtn.textContent = '★ В избранное';
+                            showTempMessage(favMessage, '✓ Удалено из избранного');
+                            refreshFavorites();
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                } else {
+                    // Добавляем в избранное
+                    const fd = new FormData();
+                    fd.append('text', currentText);
+                    fd.append('product_name', currentProduct);
+                    fd.append('mood', currentMood);
+
+                    try {
+                        const resp = await fetch('/favorite/add', { method: 'POST', body: fd });
+                        const data = await resp.json();
+                        if (data.success) {
+                            currentFavId = data.id;
+                            favBtn.textContent = '★ В избранном ✓';
+                            showTempMessage(favMessage, '✓ В избранном');
+                            refreshFavorites();
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            });
+
+            // ---- ПУБЛИКАЦИЯ ВКОНТАКТЕ ----
+            if (publishBtn) {
+                publishBtn.addEventListener('click', async function() {
+                    if (!currentText) return;
+
+                    publishBtn.disabled = true;
+                    publishBtn.textContent = '⏳ Публикация...';
+
+                    const fd = new FormData();
+                    fd.append('text', currentText);
+
+                    // Если включена отложенная публикация и выбрано время
+                    if (scheduleCheck && scheduleCheck.checked && scheduleTime && scheduleTime.value) {
+                        fd.append('schedule', scheduleTime.value);
+                    }
+
+                    try {
+                        const resp = await fetch('/publish', { method: 'POST', body: fd });
+                        const data = await resp.json();
+
+                        if (resp.ok && data.success) {
+                            publishMessage.textContent = '✓ ' + data.message;
+                            publishMessage.style.display = 'inline';
+                            publishMessage.style.color = 'var(--success)';
+                        } else {
+                            publishMessage.textContent = '✗ ' + (data.error || 'Ошибка');
+                            publishMessage.style.display = 'inline';
+                            publishMessage.style.color = 'var(--error)';
+                        }
+                    } catch (e) {
+                        publishMessage.textContent = '✗ Ошибка соединения';
+                        publishMessage.style.display = 'inline';
+                        publishMessage.style.color = 'var(--error)';
+                    }
+
+                    publishBtn.disabled = false;
+                    publishBtn.textContent = '📢 Опубликовать ВКонтакте';
+
+                    // Скрываем сообщение через 5 секунд
                     setTimeout(function() {
-                        copyMessage.style.display = 'none';
+                        publishMessage.style.display = 'none';
+                    }, 5000);
+                });
+            }
+
+            // ---- ОБНОВЛЕНИЕ СПИСКА ИЗБРАННОГО ----
+            async function refreshFavorites() {
+                try {
+                    const resp = await fetch('/favorites/list');
+                    const favs = await resp.json();
+                    renderFavorites(favs);
+                } catch (e) {
+                    // ignore
+                }
+            }
+
+            function renderFavorites(favs) {
+                const container = document.getElementById('favorites-list');
+                if (!container) return;
+
+                if (!favs || favs.length === 0) {
+                    container.innerHTML = '<p class="favorites__empty">Пока нет избранных постов.</p>';
+                    return;
+                }
+
+                let html = '';
+                favs.forEach(function(f) {
+                    html += '<div class="favorite-item" data-id="' + escapeHtml(f.id) + '">';
+                    html += '  <div class="favorite-item__header">';
+                    html += '    <span class="favorite-item__meta">' + escapeHtml(f.created_at || '');
+                    if (f.product_name) html += ' · ' + escapeHtml(f.product_name);
+                    html += '    </span>';
+                    html += '    <button class="favorite-item__remove" data-id="' + escapeHtml(f.id) + '">✕</button>';
+                    html += '  </div>';
+                    html += '  <pre class="favorite-item__text">' + escapeHtml(f.text) + '</pre>';
+                    html += '</div>';
+                });
+                container.innerHTML = html;
+
+                // Навешиваем обработчики на кнопки удаления
+                container.querySelectorAll('.favorite-item__remove').forEach(function(btn) {
+                    btn.addEventListener('click', async function() {
+                        const id = this.getAttribute('data-id');
+                        const fd = new FormData();
+                        fd.append('id', id);
+
+                        try {
+                            const resp = await fetch('/favorite/remove', { method: 'POST', body: fd });
+                            const data = await resp.json();
+                            if (data.success) {
+                                // Если удалили текущий пост — сбрасываем
+                                if (currentFavId === id) {
+                                    currentFavId = null;
+                                    favBtn.textContent = '★ В избранное';
+                                }
+                                refreshFavorites();
+                            }
+                        } catch (e) {
+                            // ignore
+                        }
+                    });
+                });
+            }
+
+            // Делегируем удаление в избранном (для уже загруженных элементов)
+            document.getElementById('favorites-list').addEventListener('click', function(e) {
+                const btn = e.target.closest('.favorite-item__remove');
+                if (!btn) return;
+                const id = btn.getAttribute('data-id');
+                const fd = new FormData();
+                fd.append('id', id);
+                fetch('/favorite/remove', { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            if (currentFavId === id) { currentFavId = null; favBtn.textContent = '★ В избранное'; }
+                            refreshFavorites();
+                        }
+                    })
+                    .catch(function() {});
+            });
+
+            // ---- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----
+            function showTempMessage(el, customText) {
+                if (customText) el.textContent = customText;
+                el.style.display = 'inline';
+                el.style.opacity = '1';
+                setTimeout(function() {
+                    el.style.opacity = '0';
+                    setTimeout(function() {
+                        el.style.display = 'none';
+                        if (customText) el.textContent = '✓ Пост скопирован';  // восстанавливаем
                     }, 400);
                 }, 2500);
-            });
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
 
         })();
     </script>

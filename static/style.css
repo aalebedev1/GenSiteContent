@@ -18,7 +18,10 @@
     --border: #dfe6e9;
     --error: #ff6b6b;
     --success: #00b894;
+    --vk-blue: #4a76a8;
+    --vk-blue-hover: #3a6390;
     --radius: 12px;
+    --radius-sm: 8px;
     --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -74,7 +77,7 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 30px;
-    padding: 40px 20px 60px;
+    padding: 40px 20px 30px;
     flex: 1;
     align-items: start;
 }
@@ -126,7 +129,7 @@ body {
     font-size: 0.95rem;
     font-family: inherit;
     border: 2px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--card-bg);
     color: var(--text);
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -145,6 +148,24 @@ body {
     min-height: 100px;
 }
 
+.form__checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.form__checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
 .form__error {
     color: var(--error);
     font-size: 0.875rem;
@@ -158,20 +179,29 @@ body {
 
 /* ----- КНОПКИ ----- */
 .btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     padding: 13px 28px;
     font-size: 1rem;
     font-weight: 700;
     font-family: inherit;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+    transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s, background 0.2s;
     text-align: center;
 }
 
 .btn:active {
     transform: scale(0.97);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .btn--primary {
@@ -182,19 +212,39 @@ body {
     box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
 }
 
-.btn--primary:hover {
+.btn--primary:hover:not(:disabled) {
     box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
 }
 
-.btn--secondary {
-    background: var(--bg);
+/* Маленькая кнопка (для ряда с действиями) */
+.btn--small {
+    padding: 8px 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Кнопка с обводкой */
+.btn--outline {
+    background: var(--card-bg);
     color: var(--text);
-    margin-top: 16px;
     border: 2px solid var(--border);
 }
 
-.btn--secondary:hover {
-    background: var(--border);
+.btn--outline:hover:not(:disabled) {
+    background: var(--bg);
+    border-color: var(--text-muted);
+}
+
+/* Кнопка ВКонтакте */
+.btn--vk {
+    background: var(--vk-blue);
+    color: #fff;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn--vk:hover:not(:disabled) {
+    background: var(--vk-blue-hover);
 }
 
 /* ----- БЛОК РЕЗУЛЬТАТА ----- */
@@ -202,7 +252,7 @@ body {
     min-height: 160px;
     background: #fafbfc;
     border: 2px dashed var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 20px;
     display: flex;
     align-items: center;
@@ -226,15 +276,143 @@ body {
     width: 100%;
 }
 
-/* ----- СООБЩЕНИЕ О КОПИРОВАНИИ ----- */
+/* ----- ДЕЙСТВИЯ С ПОСТОМ ----- */
+.post-actions {
+    margin-top: 20px;
+}
+
+.post-actions__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.post-actions__publish {
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* ----- СООБЩЕНИЯ ОБ ДЕЙСТВИЯХ ----- */
 .copy-message {
-    display: inline-block;
-    margin-left: 12px;
+    display: none;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--success);
     opacity: 1;
     transition: opacity 0.4s ease;
+    white-space: nowrap;
+}
+
+.copy-message--fav {
+    color: #e17055;
+}
+
+.copy-message--publish {
+    display: inline-block;
+    margin-top: 8px;
+}
+
+/* ----- УВЕДОМЛЕНИЕ О НАСТРОЙКЕ VK ----- */
+.vk-notice {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: #fff8e1;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid #fdcb6e;
+}
+
+.vk-notice code {
+    background: #eee;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.vk-notice a {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+/* ----- ИЗБРАННОЕ ----- */
+.favorites-section {
+    padding-bottom: 50px;
+}
+
+.favorites__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+.favorites__empty {
+    color: var(--text-light);
+    font-size: 0.95rem;
+    text-align: center;
+    padding: 32px 20px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    border: 2px dashed var(--border);
+}
+
+.favorites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.favorite-item {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 22px;
+    transition: box-shadow 0.2s;
+}
+
+.favorite-item:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.favorite-item__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.favorite-item__meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.favorite-item__remove {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+}
+
+.favorite-item__remove:hover {
+    color: var(--error);
+    background: #fff5f5;
+}
+
+.favorite-item__text {
+    font-family: inherit;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
 }
 
 /* ----- ПОДВАЛ ----- */
@@ -244,6 +422,7 @@ body {
     color: var(--text-muted);
     font-size: 0.85rem;
     border-top: 1px solid var(--border);
+    margin-top: auto;
 }
 
 .footer a {
@@ -256,12 +435,19 @@ body {
     text-decoration: underline;
 }
 
+.footer code {
+    background: #eee;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
 /* ----- АДАПТАЦИЯ ПОД МОБИЛЬНЫЕ ----- */
 @media (max-width: 768px) {
     .main-grid {
         grid-template-columns: 1fr;
         gap: 24px;
-        padding: 24px 16px 40px;
+        padding: 24px 16px 20px;
     }
 
     .header {
@@ -274,5 +460,14 @@ body {
 
     .card {
         padding: 24px;
+    }
+
+    .post-actions__row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .copy-message {
+        text-align: center;
     }
 }
