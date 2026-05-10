@@ -1,0 +1,278 @@
+/* ============================================================
+   СТИЛИ ГЕНЕРАТОРА ПОСТОВ
+   Цветовую схему можно изменить в переменных :root ниже
+   ============================================================ */
+
+/* ----- ПЕРЕМЕННЫЕ (измени цвета здесь) ----- */
+:root {
+    --primary: #6C5CE7;
+    --primary-dark: #5A4BD1;
+    --secondary: #00CEC9;
+    --gradient-start: #667eea;
+    --gradient-end: #764ba2;
+    --bg: #f0f2f5;
+    --card-bg: #ffffff;
+    --text: #2d3436;
+    --text-muted: #636e72;
+    --text-light: #b2bec3;
+    --border: #dfe6e9;
+    --error: #ff6b6b;
+    --success: #00b894;
+    --radius: 12px;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ----- СБРОС ----- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+    width: 100%;
+}
+
+/* ----- ШАПКА ----- */
+.header {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    color: #fff;
+    padding: 40px 0 36px;
+    text-align: center;
+}
+
+.header__title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.header__subtitle {
+    font-size: 1.1rem;
+    opacity: 0.85;
+    margin-top: 6px;
+    font-weight: 400;
+}
+
+/* ----- ОСНОВНАЯ СЕТКА ----- */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    padding: 40px 20px 60px;
+    flex: 1;
+    align-items: start;
+}
+
+/* ----- КАРТОЧКИ ----- */
+.card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 32px;
+    transition: box-shadow 0.2s;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.card__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+}
+
+/* ----- ФОРМА ----- */
+.form__group {
+    margin-bottom: 20px;
+}
+
+.form__label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+    color: var(--text);
+}
+
+.form__required {
+    color: var(--error);
+    font-weight: 700;
+}
+
+.form__input,
+.form__textarea,
+.form__select {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.form__input:focus,
+.form__textarea:focus,
+.form__select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
+}
+
+.form__textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form__error {
+    color: var(--error);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #fff5f5;
+    border-radius: 6px;
+    border-left: 3px solid var(--error);
+}
+
+/* ----- КНОПКИ ----- */
+.btn {
+    display: inline-block;
+    padding: 13px 28px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+    text-align: center;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn--primary {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    color: #fff;
+    width: 100%;
+    margin-top: 8px;
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+}
+
+.btn--primary:hover {
+    box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+}
+
+.btn--secondary {
+    background: var(--bg);
+    color: var(--text);
+    margin-top: 16px;
+    border: 2px solid var(--border);
+}
+
+.btn--secondary:hover {
+    background: var(--border);
+}
+
+/* ----- БЛОК РЕЗУЛЬТАТА ----- */
+.result__content {
+    min-height: 160px;
+    background: #fafbfc;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.result__placeholder {
+    color: var(--text-light);
+    font-size: 0.95rem;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.result__text {
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+    width: 100%;
+}
+
+/* ----- СООБЩЕНИЕ О КОПИРОВАНИИ ----- */
+.copy-message {
+    display: inline-block;
+    margin-left: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--success);
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+
+/* ----- ПОДВАЛ ----- */
+.footer {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+}
+
+.footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+/* ----- АДАПТАЦИЯ ПОД МОБИЛЬНЫЕ ----- */
+@media (max-width: 768px) {
+    .main-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding: 24px 16px 40px;
+    }
+
+    .header {
+        padding: 28px 0 24px;
+    }
+
+    .header__title {
+        font-size: 1.5rem;
+    }
+
+    .card {
+        padding: 24px;
+    }
+}

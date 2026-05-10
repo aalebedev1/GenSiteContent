@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор постов для товаров</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- ============================================================
+         ШАПКА
+    ============================================================ -->
+    <header class="header">
+        <div class="container">
+            <h1 class="header__title">📝 Генератор постов</h1>
+            <p class="header__subtitle">Создайте готовый пост для вашего товара за один клик</p>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         ОСНОВНОЙ КОНТЕНТ
+    ============================================================ -->
+    <main class="container main-grid">
+
+        <!-- ----- ЛЕВАЯ КОЛОНКА: ФОРМА ----- -->
+        <section class="card form-card">
+            <h2 class="card__title">Параметры поста</h2>
+
+            <form id="post-form" class="form">
+
+                <!-- Название товара -->
+                <div class="form__group">
+                    <label class="form__label" for="product_name">Название товара</label>
+                    <input class="form__input" type="text" id="product_name" name="product_name"
+                           placeholder="Например: Умная кофеварка">
+                </div>
+
+                <!-- Описание товара (обязательное) -->
+                <div class="form__group">
+                    <label class="form__label" for="description">
+                        Описание товара <span class="form__required">*</span>
+                    </label>
+                    <textarea class="form__textarea" id="description" name="description" rows="4"
+                              placeholder="Опишите товар: особенности, преимущества, материалы..."
+                              required></textarea>
+                </div>
+
+                <!-- Цена или выгода -->
+                <div class="form__group">
+                    <label class="form__label" for="price">Цена или выгода</label>
+                    <input class="form__input" type="text" id="price" name="price"
+                           placeholder="Например: 2 490 ₽ или Скидка 30%">
+                </div>
+
+                <!-- Настроение поста -->
+                <div class="form__group">
+                    <label class="form__label" for="mood">Настроение поста</label>
+                    <select class="form__select" id="mood" name="mood">
+                        {% for key, label in moods.items() %}
+                        <option value="{{ key }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Кнопка отправки -->
+                <button type="submit" class="btn btn--primary">
+                    ✨ Сформировать пост
+                </button>
+            </form>
+        </section>
+
+        <!-- ----- ПРАВАЯ КОЛОНКА: РЕЗУЛЬТАТ ----- -->
+        <section class="card result-card">
+            <h2 class="card__title">Готовый пост</h2>
+
+            <!-- Блок для готового текста -->
+            <div id="post-result" class="result__content">
+                <p class="result__placeholder">
+                    Заполните форму и нажмите<br>«Сформировать пост»
+                </p>
+            </div>
+
+            <!-- Кнопка копирования (скрыта, пока нет текста) -->
+            <button id="copy-btn" class="btn btn--secondary" style="display: none;">
+                📋 Скопировать пост
+            </button>
+
+            <!-- Сообщение об успешном копировании -->
+            <span id="copy-message" class="copy-message" style="display: none;">
+                ✓ Пост скопирован
+            </span>
+        </section>
+
+    </main>
+
+    <!-- ============================================================
+         ПОДВАЛ
+    ============================================================ -->
+    <footer class="footer">
+        <div class="container">
+            <p>⚙️ Настройки формирования — <a href="/voice.md" target="_blank">voice.md</a></p>
+        </div>
+    </footer>
+
+    <!-- ============================================================
+         СКРИПТЫ
+    ============================================================ -->
+    <script>
+        (function() {
+            // ---- ЭЛЕМЕНТЫ ----
+            const form = document.getElementById('post-form');
+            const resultBlock = document.getElementById('post-result');
+            const copyBtn = document.getElementById('copy-btn');
+            const copyMessage = document.getElementById('copy-message');
+            const descriptionField = document.getElementById('description');
+            const errorMessage = document.getElementById('error-message');
+
+            // ---- ОТПРАВКА ФОРМЫ ----
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                // Сброс предыдущего сообщения об ошибке
+                const oldError = document.querySelector('.form__error');
+                if (oldError) oldError.remove();
+
+                // Проверка обязательного поля на клиенте
+                if (!descriptionField.value.trim()) {
+                    const err = document.createElement('p');
+                    err.className = 'form__error';
+                    err.textContent = 'Пожалуйста, заполните описание товара.';
+                    descriptionField.parentNode.appendChild(err);
+                    descriptionField.focus();
+                    return;
+                }
+
+                // Собираем данные формы
+                const formData = new FormData(form);
+
+                try {
+                    const response = await fetch('/generate', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        // Показываем ошибку от сервера
+                        const err = document.createElement('p');
+                        err.className = 'form__error';
+                        err.textContent = data.error;
+                        descriptionField.parentNode.appendChild(err);
+                        return;
+                    }
+
+                    // Показываем готовый пост
+                    resultBlock.innerHTML = '<pre class="result__text">' + data.post + '</pre>';
+                    copyBtn.style.display = 'inline-block';
+                    copyMessage.style.display = 'none';
+
+                } catch (err) {
+                    resultBlock.innerHTML = '<p class="form__error">Ошибка соединения. Попробуйте снова.</p>';
+                }
+            });
+
+            // ---- КОПИРОВАНИЕ ТЕКСТА ----
+            copyBtn.addEventListener('click', async function() {
+                const postText = resultBlock.querySelector('.result__text');
+                if (!postText) return;
+
+                try {
+                    await navigator.clipboard.writeText(postText.textContent);
+                } catch (err) {
+                    // Запасной вариант для старых браузеров
+                    const range = document.createRange();
+                    range.selectNode(postText);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
+                    document.execCommand('copy');
+                    window.getSelection().removeAllRanges();
+                }
+
+                // Показываем сообщение
+                copyMessage.style.display = 'inline';
+                copyMessage.style.opacity = '1';
+
+                // Прячем через 2.5 секунды
+                setTimeout(function() {
+                    copyMessage.style.opacity = '0';
+                    setTimeout(function() {
+                        copyMessage.style.display = 'none';
+                    }, 400);
+                }, 2500);
+            });
+
+        })();
+    </script>
+
+</body>
+</html>
